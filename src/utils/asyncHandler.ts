@@ -1,4 +1,4 @@
-import { type Request, type Response, type NextFunction } from "express";
+import { type Request, type Response, type NextFunction } from 'express';
 
 /**
  * Wraps an async Express route/controller and forwards
@@ -17,22 +17,14 @@ import { type Request, type Response, type NextFunction } from "express";
  * focused on application logic.
  */
 export const asyncHandler = (
-    fn: (
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ) => Promise<any>
+  fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown>, //unknown over any
 ) => {
-    return (
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ) => {
-        /**
-         * Promise.resolve() ensures that both synchronous throws
-         * and rejected promises are forwarded to Express's
-         * error-handling middleware.
-         */
-        Promise.resolve(fn(req, res, next)).catch(next);
-    };
+  return (req: Request, res: Response, next: NextFunction) => {
+    /**
+     * Promise.resolve() ensures that both synchronous throws
+     * and rejected promises are forwarded to Express's
+     * error-handling middleware.
+     */
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
 };

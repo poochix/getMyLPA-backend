@@ -4,6 +4,8 @@
 .devin/
 
 
+
+
 # ==========================================
 #  Secrets, Environment Variables & Configs (CRITICAL)
 # ==========================================
@@ -97,3 +99,9 @@ $RECYCLE.BIN/
 *.njsproj
 *.sln
 *.swp
+
+
+prisma.config.js
+prisma.config.js.map
+prisma.config.d.ts
+prisma.config.d.ts.map
