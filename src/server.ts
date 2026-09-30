@@ -11,7 +11,7 @@ const server = app.listen(env.PORT, () => {
   console.log(`GetMyLPA server is running on http://localhost:${env.PORT}`);
 });
 
-/**
+/*
  * Gracefully shut down the server when the process receives
  * a termination signal.
  *

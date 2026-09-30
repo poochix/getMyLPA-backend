@@ -7,7 +7,7 @@ import morgan from 'morgan';
 
 const app = express();
 
-/**
+/*
  * Security middleware.
  *
  * Helmet sets a collection of HTTP response headers that help
@@ -15,7 +15,7 @@ const app = express();
  */
 app.use(helmet());
 
-/**
+/*
  * CORS configuration.
  *
  * Only the configured frontend origin is allowed to make
@@ -34,7 +34,7 @@ app.use(
 
 app.use(morgan('dev'));
 
-/**
+/*
  * Parse incoming JSON request bodies.
  *
  * Example:
@@ -49,7 +49,7 @@ app.use(morgan('dev'));
 
 app.use(express.json());
 
-/**
+/*
  * Parse URL-encoded request bodies.
  *
  * This is useful for form submissions and other clients
@@ -57,7 +57,7 @@ app.use(express.json());
  */
 app.use(express.urlencoded({ extended: true }));
 
-/**
+/*
  * Basic health-check endpoint.
  *
  * Used by developers, deployment platforms, and monitoring

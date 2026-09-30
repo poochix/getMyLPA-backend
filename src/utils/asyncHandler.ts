@@ -1,6 +1,6 @@
 import { type Request, type Response, type NextFunction } from 'express';
 
-/**
+/*
  * Wraps an async Express route/controller and forwards
  * rejected promises to Express's centralized error handler.
  *
