@@ -4,6 +4,7 @@ import helmet from 'helmet';
 
 import { env } from '@/config/env.js';
 import morgan from 'morgan';
+import { authRouter } from './modules/auth/auth.route.js';
 
 const app = express();
 
@@ -13,7 +14,19 @@ const app = express();
  * Helmet sets a collection of HTTP response headers that help
  * protect the application against several common web vulnerabilities.
  */
-app.use(helmet());
+app.use(
+  helmet(
+    //     {
+    //     contentSecurityPolicy: {
+    //       directives: {
+    //         ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+    //         // Allow connections to your own server and DevTools paths
+    //         "connect-src": ["'self'", "http://localhost:8000", "chrome-extension://*"],
+    //       },
+    //     },
+    //   }
+  ),
+);
 
 /*
  * CORS configuration.
@@ -24,6 +37,8 @@ app.use(helmet());
 app.use(
   cors({
     origin: env.CORS_ORIGIN,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   }),
 );
@@ -63,6 +78,8 @@ app.use(express.urlencoded({ extended: true }));
  * Used by developers, deployment platforms, and monitoring
  * systems to verify that the API process is running.
  */
+
+app.use('/api/v1/auth', authRouter);
 
 app.get('/health', (_req, res) => {
   res.status(200).json({
