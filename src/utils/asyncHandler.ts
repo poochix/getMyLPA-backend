@@ -19,6 +19,7 @@ import { type Request, type Response, type NextFunction } from 'express';
 export const asyncHandler = (
   fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown>, //unknown over any
 ) => {
+  // express does not understand promise directly thus the return hides the async logic
   return (req: Request, res: Response, next: NextFunction) => {
     /**
      * Promise.resolve() ensures that both synchronous throws
