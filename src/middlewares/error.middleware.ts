@@ -6,7 +6,7 @@ import { env } from '@/config/env.js';
 interface ErrorResponseBody {
   success: false;
   message: string;
-  code?: string;
+  // code?: string;
   errors?: unknown;
   stack?: string;
 }
@@ -19,22 +19,22 @@ export function errorMiddleware(
 ): void {
   let statusCode = 500;
   let message = 'Internal Server Error';
-  let code = 'INTERNAL_SERVER_ERROR';
+  // let code = 'INTERNAL_SERVER_ERROR';
   let errors: unknown = undefined;
 
   // 1. Handle our custom operational ApiError
   if (error instanceof ApiError) {
     statusCode = (error as ApiError).statusCode;
     message = (error as ApiError).message;
-    code = (error as ApiError).isOperational
-      ? 'OPERATIONAL_ERROR'
-      : 'INTERNAL_ERROR';
+    // code = (error as ApiError).isOperational
+    //   ? 'OPERATIONAL_ERROR'
+    //   : 'INTERNAL_ERROR';
   }
   // 2. Automatically intercept and format Zod validation errors
   else if (error instanceof ZodError) {
     statusCode = 400;
     message = 'Validation failed';
-    code = 'VALIDATION_ERROR';
+    // code = 'VALIDATION_ERROR';
     errors = error.flatten().fieldErrors; // Extracts clean field-specific errors
   }
   // 3. Unknown/Programmer errors: MUST log before responding
@@ -46,7 +46,7 @@ export function errorMiddleware(
   const responsePayload: ErrorResponseBody = {
     success: false,
     message,
-    code,
+    // code,
     ...(errors !== undefined && { errors }),
     // Only append the stack trace if we are in development mode
     ...(env.NODE_ENV === 'development' &&

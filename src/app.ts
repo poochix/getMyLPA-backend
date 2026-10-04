@@ -5,6 +5,8 @@ import helmet from 'helmet';
 import { env } from '@/config/env.js';
 import morgan from 'morgan';
 import { authRouter } from './modules/auth/auth.route.js';
+import { notFoundMiddleware } from './middlewares/404.middleware.js';
+import { errorMiddleware } from './middlewares/error.middleware.js';
 
 const app = express();
 
@@ -87,5 +89,9 @@ app.get('/health', (_req, res) => {
     message: 'GetMyLpa API is healthy',
   });
 });
+
+app.use(notFoundMiddleware);
+
+app.use(errorMiddleware);
 
 export { app };
