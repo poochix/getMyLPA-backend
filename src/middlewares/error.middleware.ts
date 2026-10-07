@@ -14,7 +14,7 @@ interface ErrorResponseBody {
 
 export function errorMiddleware(
   error: unknown,
-  req: Request,
+  _req: Request,
   res: Response,
   _next: NextFunction, // Prefix with underscore to satisfy strict TypeScript
 ): void {
@@ -25,8 +25,8 @@ export function errorMiddleware(
 
   // 1. Handle our custom operational ApiError
   if (error instanceof ApiError) {
-    statusCode = (error as ApiError).statusCode;
-    message = (error as ApiError).message;
+    statusCode = error.statusCode;
+    message = error.message;
     // code = (error as ApiError).isOperational
     //   ? 'OPERATIONAL_ERROR'
     //   : 'INTERNAL_ERROR';
