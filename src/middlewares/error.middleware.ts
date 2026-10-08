@@ -2,7 +2,6 @@ import { type Request, type Response, type NextFunction } from 'express';
 import { ZodError } from 'zod';
 import { ApiError } from '@/utils/ApiError.js';
 import { env } from '@/config/env.js';
-import { logger } from '@/lib/logger.js';
 
 interface ErrorResponseBody {
   success: false;
@@ -14,7 +13,7 @@ interface ErrorResponseBody {
 
 export function errorMiddleware(
   error: unknown,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction, // Prefix with underscore to satisfy strict TypeScript
 ): void {
@@ -40,7 +39,7 @@ export function errorMiddleware(
   }
   // 3. Unknown/Programmer errors: MUST log before responding
   else {
-    logger.error(error, '🔥 Unhandled Application Exception');
+    req.log.error(error, '🔥 Unhandled Application Exception');
   }
 
   // 4. Construct the final response payload
