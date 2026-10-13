@@ -20,8 +20,33 @@ import { env } from '@/config/env.js';
  * reduce unnecessary logs in production.
  */
 
+/* Redaction provides defense-in-depth when sensitive fields
+ * appear in objects passed to Pino.
+ *
+ * It does not replace the rule that passwords, tokens, request
+ * bodies, and other secrets must not be logged in the first place.
+ */
+
 const logger = pino({
   level: env.NODE_ENV === 'development' ? 'debug' : 'info',
+  redact: {
+    paths: [
+      'password',
+      'passwordConfirmation',
+      'currentPassword',
+      'newPassword',
+      'accessToken',
+      'refreshToken',
+      'token',
+      'apiKey',
+      'authorization',
+      'req.headers.authorization',
+      'req.headers.cookie',
+      'headers.authorization',
+      'headers.cookie',
+    ],
+    censor: '[REDACTED]',
+  },
 });
 
 /**

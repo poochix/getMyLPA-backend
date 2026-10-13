@@ -91,6 +91,10 @@ app.get('/health', (_req, res) => {
   });
 });
 
+app.get('/test-error', (_req, _res, next) => {
+  next(new Error('Temporary error-handling test'));
+});
+
 app.use(notFoundMiddleware);
 
 app.use(errorMiddleware);

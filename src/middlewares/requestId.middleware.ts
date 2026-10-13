@@ -56,5 +56,13 @@ export function requestIdMiddleware(
    */
   res.setHeader('X-Request-ID', requestId);
 
+  /*
+   * Create a logger dedicated to this request.
+   *
+   * Every log produced through this child logger automatically
+   * includes the requestId field.
+   */
+  res.locals.logger = logger.child({ requestId });
+
   next();
 }
