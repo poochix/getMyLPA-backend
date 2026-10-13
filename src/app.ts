@@ -4,8 +4,14 @@ import helmet from 'helmet';
 
 import { env } from '@/config/env.js';
 import morgan from 'morgan';
+import { authRouter } from './modules/auth/auth.route.js';
+import { notFoundMiddleware } from './middlewares/404.middleware.js';
+import { errorMiddleware } from './middlewares/error.middleware.js';
+import { requestIdMiddleware } from './middlewares/requestId.middleware.js';
 
 const app = express();
+
+app.use(requestIdMiddleware);
 
 /*
  * Security middleware.
@@ -13,7 +19,19 @@ const app = express();
  * Helmet sets a collection of HTTP response headers that help
  * protect the application against several common web vulnerabilities.
  */
-app.use(helmet());
+app.use(
+  helmet(
+    //     {
+    //     contentSecurityPolicy: {
+    //       directives: {
+    //         ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+    //         // Allow connections to your own server and DevTools paths
+    //         "connect-src": ["'self'", "http://localhost:8000", "chrome-extension://*"],
+    //       },
+    //     },
+    //   }
+  ),
+);
 
 /*
  * CORS configuration.
@@ -24,15 +42,15 @@ app.use(helmet());
 app.use(
   cors({
     origin: env.CORS_ORIGIN,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    exposedHeaders: ['X-Request-ID'],
     credentials: true,
   }),
 );
 
-// Requests Logging (Morgan)
-// Automatically logs incoming HTTP requests to your terminal console
-// 'dev' gives a clean, color-coded output for development
-
-app.use(morgan('dev'));
+// Include the generated request ID in each HTTP access log.
+app.use(morgan(':res[X-Request-ID] :method :url :status :response-time ms'));
 
 /*
  * Parse incoming JSON request bodies.
@@ -64,11 +82,21 @@ app.use(express.urlencoded({ extended: true }));
  * systems to verify that the API process is running.
  */
 
+app.use('/api/v1/auth', authRouter);
+
 app.get('/health', (_req, res) => {
   res.status(200).json({
     success: true,
     message: 'GetMyLpa API is healthy',
   });
 });
+
+app.get('/test-error', (_req, _res, next) => {
+  next(new Error('Temporary error-handling test'));
+});
+
+app.use(notFoundMiddleware);
+
+app.use(errorMiddleware);
 
 export { app };

@@ -1,5 +1,6 @@
 import { app } from '@/app.js';
 import { env } from './config/env.js';
+import { logger } from './lib/logger.js';
 
 /**
  * Start the HTTP server.
@@ -8,7 +9,7 @@ import { env } from './config/env.js';
  * configuration makes the app easier to test and reuse.
  */
 const server = app.listen(env.PORT, () => {
-  console.log(`GetMyLPA server is running on http://localhost:${env.PORT}`);
+  logger.info(`GetMyLPA server is running on http://localhost:${env.PORT}`);
 });
 
 /*
@@ -20,27 +21,39 @@ const server = app.listen(env.PORT, () => {
  */
 
 const shutdown = (signal: string) => {
-  console.log(`\n${signal} received. Shutting down...`);
+  logger.info(`${signal} received. Shutting down...`);
 
-  server.close((err) => {
-    // Stops accepting new connections
+  // 1. Start the fallback timeout immediately.
+  // If the cleanup hangs anywhere below, this will trigger.
+  const forceQuitTimeout = setTimeout(() => {
+    logger.warn(
+      'Could not close connections in time, forcefully shutting down.',
+    );
+    process.exit(1);
+  }, 10000); // 10 seconds
+
+  // 2. Stop accepting new connections
+  server.close(async (err) => {
     if (err) {
-      console.log('Error during HTTP server closure', err);
-      process.exit(1); // Exits with failure if the server failed to close cleanly
+      logger.error(err, 'Error during HTTP server closure');
+      clearTimeout(forceQuitTimeout);
+      process.exit(1);
     }
-    console.log('HTTP server is closed');
+    logger.info('HTTP server is closed');
 
-    //  Closes database connections or other resources here if needed
-    // e.g., await db.disconnect();
-    process.exit(0); //exits with success
+    try {
+      // 3. Optional: Closes database connections or other resources here safely
+      // await prisma.\$disconnect();
+      // logger.info('Database disconnected cleanly');
 
-    // Fallback timeout: Force exit if cleanup takes too long (e.g., hanging connections)
-    setTimeout(() => {
-      console.error(
-        'Could not close connections in time, forcefully shutting down',
-      );
-      process.exit(1); // Exit with failure if the server failed to close cleanly
-    }, 10000); // 10 seconds
+      // Clear the timeout since we finished successfully, then exit
+      clearTimeout(forceQuitTimeout);
+      process.exit(0);
+    } catch (dbError) {
+      logger.error(dbError, 'Error disconnecting database during shutdown');
+      clearTimeout(forceQuitTimeout);
+      process.exit(1);
+    }
   });
 };
 process.on('SIGTERM', () => shutdown('SIGTERM'));
