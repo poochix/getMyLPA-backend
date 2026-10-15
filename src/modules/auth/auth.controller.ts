@@ -25,7 +25,7 @@ export const getAuthModuleStatus = async (_req: Request, res: Response) => {
 
   const result = await authService.getModuleStatus();
 
-  // Wrap the successful result in our standardized API response.
+  // Wrap the successful result in our standardized API response
   const response = new ApiResponse(200, result, 'auth module working');
   // Send the standardized response to the client.
   return res.status(response.statusCode).json(response);
