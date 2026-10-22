@@ -29,12 +29,14 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "helmet": "^8.3.0",
     "morgan": "^1.12.1",
+    "pg": "^8.23.1",
     "pino": "^10.4.0",
     "zod": "^4.6.5"
   },
@@ -50,7 +52,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",
     "prettier": "^3.9.9",
-    "prisma": "^6.12.0",
+    "prisma": "^7.10.0",
     "tsx": "^4.23.15",
     "typescript": "5.9.3",
     "typescript-eslint": "^8.70.1"
