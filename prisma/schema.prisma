@@ -1,0 +1,114 @@
+// Generates a TypeScript Prisma Client inside our application source.
+
+generator client{
+    provider = "prisma-client"
+    output = "../src/generated/prisma"
+    }
+
+// Defines PostgreSQL as our database.
+// Prisma 7 reads the connection URL from prisma.config.ts.
+
+    datasource db {
+        provider = "postgresql"
+    }
+
+
+    // defines the access levels supported by the application
+    enum UserRole {
+        USER
+        ADMIN
+ 
+    }
+
+
+    // tracks the processing state of an uploaded resume
+    enum ResumeStatus{
+        UPLOADED
+        PROCESSING 
+        PROCESSED 
+        FAILED 
+
+    }
+
+
+    // tracks the lifecycle of an ai resume analysis
+
+    enum AnalysisStatus {
+        PENDING 
+        PROCESSING 
+        COMPLETED 
+        FAILED 
+    } 
+
+    model User {
+        id              String     @id @default(uuid()) @db.Uuid
+        name            String 
+        email           String     @unique 
+        passwordHash    String  
+        role            UserRole   @default(USER)
+
+        // a user can upload multiple resumes
+
+        resume          Resume[] 
+
+        createdAt       DateTime   @default(now())
+        updatedAt       DateTime   @updatedAt
+
+        @@index([createdAt])
+
+    }
+
+
+    model Resume {
+        id                   String       @id @default(uuid()) @db.Uuid
+        userId               String      @db.Uuid
+        originalFileName     String
+        storageKey           String       @unique
+        mimeType             String 
+        sizeBytes            Int
+        status               ResumeStatus @default(UPLOADED)
+
+         //connects the resume to its owner
+         user                User       @relation(fields:[userId], references:[id], onDelete: Cascade)
+
+         // a resume can have multiple analysis 
+         analyses   ResumeAnalysis[]
+
+         createdAt  DateTime  @default(now())
+         updatedAt  DateTime  @updatedAt
+
+         @@index([userId, createdAt])
+         @@index([status])
+    }
+
+model ResumeAnalysis{
+    id   String    @id @default(uuid())  @db.Uuid
+    resumeId    String   @db.Uuid
+    status    AnalysisStatus  @default(PENDING)
+
+    //records which ai model produced the analysis
+    provider  String?
+    model     String?
+
+    //flexible structure for ai generated results
+    // postgresql stores this a JSONB
+    result Json?
+
+    //usefull for tracking failures without storing sensitive details
+    errorCode   String?
+
+    startedAt   DateTime?
+    completedAt DateTime?
+
+
+    //connects each resume to it source resume 
+
+    resume  Resume  @relation(fields: [resumeId], references:[id], onDelete: Cascade)
+
+    createdAt  DateTime  @default(now())
+    updatedAt  DateTime  @updatedAt
+
+    @@index([resumeId, createdAt])
+    @@index([status, createdAt])
+}
+
