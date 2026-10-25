@@ -1,60 +1,106 @@
 import { app } from '@/app.js';
-import { env } from './config/env.js';
-import { logger } from './lib/logger.js';
+import { env } from '@/config/env.js';
+import { logger } from '@/lib/logger.js';
+import { prisma } from '@/lib/prisma.js';
+
+const SHUTDOWN_TIMEOUT_MS = 10_000;
+
+let server: ReturnType<typeof app.listen> | undefined;
+let isShuttingDown = false;
 
 /**
- * Start the HTTP server.
- *
- * Keeping server startup separate from Express application
- * configuration makes the app easier to test and reuse.
+ * Start the application only after PostgreSQL is reachable.
  */
-const server = app.listen(env.PORT, () => {
-  logger.info(`GetMyLPA server is running on http://localhost:${env.PORT}`);
-});
+async function startServer(): Promise<void> {
+  try {
+    await prisma.$connect();
 
-/*
- * Gracefully shut down the server when the process receives
- * a termination signal.
- *
- * This becomes important when deploying to containers or
- * cloud platforms where processes may be restarted.
- */
+    logger.info('Database connection established');
 
-const shutdown = (signal: string) => {
-  logger.info(`${signal} received. Shutting down...`);
-
-  // 1. Start the fallback timeout immediately.
-  // If the cleanup hangs anywhere below, this will trigger.
-  const forceQuitTimeout = setTimeout(() => {
-    logger.warn(
-      'Could not close connections in time, forcefully shutting down.',
-    );
-    process.exit(1);
-  }, 10000); // 10 seconds
-
-  // 2. Stop accepting new connections
-  server.close(async (err) => {
-    if (err) {
-      logger.error(err, 'Error during HTTP server closure');
-      clearTimeout(forceQuitTimeout);
-      process.exit(1);
+    if (isShuttingDown) {
+      await prisma.$disconnect();
+      return;
     }
-    logger.info('HTTP server is closed');
+
+    server = app.listen(env.PORT, () => {
+      logger.info(`GetMyLPA server is running on http://localhost:${env.PORT}`);
+    });
+
+    server.on('error', (error: Error) => {
+      logger.fatal({ err: error }, 'HTTP server encountered an error');
+      process.exitCode = 1;
+      void shutdown('SERVER_ERROR');
+    });
+  } catch (error: unknown) {
+    logger.fatal({ err: error }, 'Application startup failed');
 
     try {
-      // 3. Optional: Closes database connections or other resources here safely
-      // await prisma.\$disconnect();
-      // logger.info('Database disconnected cleanly');
-
-      // Clear the timeout since we finished successfully, then exit
-      clearTimeout(forceQuitTimeout);
-      process.exit(0);
-    } catch (dbError) {
-      logger.error(dbError, 'Error disconnecting database during shutdown');
-      clearTimeout(forceQuitTimeout);
-      process.exit(1);
+      await prisma.$disconnect();
+    } catch (disconnectError: unknown) {
+      logger.error(
+        { err: disconnectError },
+        'Failed to disconnect Prisma after startup failure',
+      );
     }
-  });
-};
-process.on('SIGTERM', () => shutdown('SIGTERM'));
-process.on('SIGINT', () => shutdown('SIGINT'));
+
+    process.exitCode = 1;
+  }
+}
+
+/**
+ * Stop accepting requests, wait for HTTP connections to close,
+ * and disconnect Prisma before the process exits.
+ */
+async function shutdown(signal: string): Promise<void> {
+  if (isShuttingDown) {
+    logger.warn(`${signal} received while shutdown is already in progress`);
+    return;
+  }
+
+  isShuttingDown = true;
+
+  logger.info(`${signal} received. Starting graceful shutdown...`);
+
+  const timeout = setTimeout(() => {
+    logger.fatal('Graceful shutdown timed out; forcing exit');
+    process.exit(1);
+  }, SHUTDOWN_TIMEOUT_MS);
+
+  timeout.unref();
+
+  try {
+    if (server) {
+      await new Promise<void>((resolve, reject) => {
+        server!.close((error) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve();
+          }
+        });
+      });
+
+      logger.info('HTTP server closed successfully');
+    }
+
+    await prisma.$disconnect();
+
+    logger.info('Database disconnected successfully');
+    logger.info('Graceful shutdown completed');
+  } catch (error: unknown) {
+    logger.error({ err: error }, 'Error during graceful shutdown');
+    process.exitCode = 1;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+process.on('SIGTERM', () => {
+  void shutdown('SIGTERM');
+});
+
+process.on('SIGINT', () => {
+  void shutdown('SIGINT');
+});
+
+void startServer();

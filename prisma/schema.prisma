@@ -88,7 +88,7 @@ model ResumeAnalysis{
 
     //records which ai model produced the analysis
     provider  String?
-    model     String?
+    model    String?
 
     //flexible structure for ai generated results
     // postgresql stores this a JSONB
